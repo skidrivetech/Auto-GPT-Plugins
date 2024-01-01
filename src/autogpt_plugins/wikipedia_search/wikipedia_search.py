@@ -30,10 +30,7 @@ def _wikipedia_search(query: str, num_results: int = 5) -> str | list[str]:
         session.headers.update(
             {
                 "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; "
-                    "Win64; x64) AppleWebKit/537.36 "
-                    "(KHTML, like Gecko) Chrome/"
-                    "112.0.5615.49 Safari/537.36"
+                    "AutoGPT wikipedia_search plugin (https://news.agpt.co/contact/) Requests"
                 )
             }
         )
@@ -54,6 +51,6 @@ def _wikipedia_search(query: str, num_results: int = 5) -> str | list[str]:
                 if len(items) == num_results:
                     break
         except Exception as e:
-            return f"'wikipedia_search' on query: {query} raised exception: {e}"
+            return f"'wikipedia_search' on query: '{query}' raised exception: '{e}'"
 
     return json.dumps(items, ensure_ascii=False, indent=4)

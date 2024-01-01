@@ -1,7 +1,9 @@
-"""This is a Bluesky plugin for AutoGPT using atprototools."""
+"""WolframAlpha search integrations."""
+import os
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, TypeVar
 
 from auto_gpt_plugin_template import AutoGPTPluginTemplate
+from wolframalpha import Client
 
 PromptGenerator = TypeVar("PromptGenerator")
 
@@ -11,44 +13,26 @@ class Message(TypedDict):
     content: str
 
 
-class AutoGPTBluesky(AutoGPTPluginTemplate):
+class AutoGPTWolframAlphaSearch(AutoGPTPluginTemplate):
     """
-    Bluesky plugin for AutoGPT using atprototools.
+    WolframAlpha search integrations
     """
 
     def __init__(self):
         super().__init__()
-        self._name = "autogpt-bluesky"
+        self._name = "autogpt-wolframalpha-search"
         self._version = "0.1.0"
-        self._description = "Bluesky integration using atprototools."
+        self._description = ("WolframAlpha is an answer engine, it answers "
+                             "factual queries by computing answers from "
+                             "externally sourced data. It can provide answers "
+                             "to math, data and science queries.")
+        self.wolframalpha_appid = os.getenv("WOLFRAMALPHA_APPID")
 
-    def post_prompt(self, prompt: PromptGenerator) -> PromptGenerator:
-        """This method is called just after the generate_prompt is called,
-            but actually before the prompt is generated.
-        Args:
-            prompt (PromptGenerator): The prompt generator.
-        Returns:
-            PromptGenerator: The prompt generator.
-        """
-        from .bluesky_plugin.bluesky_plugin import (
-            get_latest_posts,
-            post_message,
-            username_and_pwd_set,
-        )
-
-        if not username_and_pwd_set():
-            return prompt
-
-        prompt.add_command(
-            "post_to_bluesky", "Post to Bluesky", {
-                "text": "<text>"}, post_message
-        )
-        prompt.add_command(
-            "get_bluesky_posts", "Get Blueskey Posts", {
-                "username": "<username>",
-                "number_of_posts": "<number_of_posts>"}, get_latest_posts)
-
-        return prompt
+        self.api = None
+        if self.wolframalpha_appid is not None:
+            self.api = Client(self.wolframalpha_appid)
+        else:
+            print("WolframAlpha AppID not found in .env file.")
 
     def can_handle_on_response(self) -> bool:
         """This method is called to check that the plugin can
@@ -76,7 +60,7 @@ class AutoGPTBluesky(AutoGPTPluginTemplate):
         return False
 
     def on_planning(
-        self, prompt: PromptGenerator, messages: List[str]
+            self, prompt: PromptGenerator, messages: List[str]
     ) -> Optional[str]:
         """This method is called before the planning chat completeion is done.
         Args:
@@ -157,7 +141,7 @@ class AutoGPTBluesky(AutoGPTPluginTemplate):
         return False
 
     def pre_command(
-        self, command_name: str, arguments: Dict[str, Any]
+            self, command_name: str, arguments: Dict[str, Any]
     ) -> Tuple[str, Dict[str, Any]]:
         """This method is called before the command is executed.
         Args:
@@ -186,11 +170,11 @@ class AutoGPTBluesky(AutoGPTPluginTemplate):
         pass
 
     def can_handle_chat_completion(
-        self,
-        messages: list[Dict[Any, Any]],
-        model: str,
-        temperature: float,
-        max_tokens: int,
+            self,
+            messages: list[Dict[Any, Any]],
+            model: str,
+            temperature: float,
+            max_tokens: int,
     ) -> bool:
         """This method is called to check that the plugin can
         handle the chat_completion method.
@@ -204,11 +188,11 @@ class AutoGPTBluesky(AutoGPTPluginTemplate):
         return False
 
     def handle_chat_completion(
-        self,
-        messages: list[Dict[Any, Any]],
-        model: str,
-        temperature: float,
-        max_tokens: int,
+            self,
+            messages: list[Dict[Any, Any]],
+            model: str,
+            temperature: float,
+            max_tokens: int,
     ) -> str:
         """This method is called when the chat completion is done.
         Args:
@@ -220,6 +204,24 @@ class AutoGPTBluesky(AutoGPTPluginTemplate):
             str: The resulting response.
         """
         return None
+
+    def post_prompt(self, prompt: PromptGenerator) -> PromptGenerator:
+        """This method is called just after the generate_prompt is called,
+            but actually before the prompt is generated.
+        Args:
+            prompt (PromptGenerator): The prompt generator.
+        Returns:
+            PromptGenerator: The prompt generator.
+        """
+        if self.api:
+            from .wolframalpha_search import _wolframalpha_search
+            prompt.add_command(
+                "wolframalpha_search",
+                self._description,
+                {"query": "<query>"},
+                _wolframalpha_search,
+            )
+        return prompt
 
     def can_handle_text_embedding(
         self, text: str

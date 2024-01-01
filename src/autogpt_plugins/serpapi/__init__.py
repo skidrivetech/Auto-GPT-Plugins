@@ -1,10 +1,10 @@
-"""This is the Baidu search engines plugin for Auto-GPT."""
+"""This is the SerpApi search engines plugin for Auto-GPT."""
 import os
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, TypeVar
 
 from auto_gpt_plugin_template import AutoGPTPluginTemplate
 
-from .baidu_search import _baidu_search
+from .serpapi_search import serpapi_search
 
 PromptGenerator = TypeVar("PromptGenerator")
 
@@ -14,18 +14,16 @@ class Message(TypedDict):
     content: str
 
 
-class AutoGPTBaiduSearch(AutoGPTPluginTemplate):
+class AutoGPTSerpApiSearch(AutoGPTPluginTemplate):
     def __init__(self):
         super().__init__()
-        self._name = "Baidu-Search-Plugin"
+        self._name = "SerpApi-Search-Plugin"
         self._version = "0.1.0"
         self._description = (
-            "This plugin performs Baidu searches using the provided query."
+            "This plugin performs SerpApi searches using the provided query."
         )
         self.load_commands = (
-            os.getenv("SEARCH_ENGINE")
-            and os.getenv("SEARCH_ENGINE").lower() == "baidu"
-            and os.getenv("BAIDU_COOKIE")
+            os.getenv("SERPAPI_API_KEY")
         )
 
     def can_handle_post_prompt(self) -> bool:
@@ -33,17 +31,17 @@ class AutoGPTBaiduSearch(AutoGPTPluginTemplate):
 
     def post_prompt(self, prompt: PromptGenerator) -> PromptGenerator:
         if self.load_commands:
-            # Add Baidu Search command
+            # Add SerpApi Search command
             prompt.add_command(
-                "Baidu Search",
-                "baidu_search",
+                "SerpApi Search",
+                "serpapi_search",
                 {"query": "<query>"},
-                _baidu_search,
+                serpapi_search,
             )
         else:
             print(
-                "Warning: Baidu-Search-Plugin is not fully functional. "
-                "Please set the SEARCH_ENGINE and BAIDU_COOKIE environment variables."
+                "Warning: SerpApi-Search-Plugin is not fully functional. "
+                "Please set the SERPAPI_API_KEY environment variable."
             )
         return prompt
 
@@ -54,7 +52,7 @@ class AutoGPTBaiduSearch(AutoGPTPluginTemplate):
         self, command_name: str, arguments: Dict[str, Any]
     ) -> Tuple[str, Dict[str, Any]]:
         if command_name == "google" and self.load_commands:
-            return "baidu_search", {"query": arguments["query"]}
+            return "serpapi_search", {"query": arguments["query"]}
         else:
             return command_name, arguments
 
